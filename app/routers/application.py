@@ -13,7 +13,6 @@ router = APIRouter()
 # applications variable cant be a schemas because of the argument document_file...
 @router.post("/", response_model=schemas.ApplicationBase)
 def create_application(
-        id: int = Form(...),
         scholarship_id: int = Form(...),
         user_id: str = Form(...),
         status: schemas.ApplicationStatus = Form(schemas.ApplicationStatus.submitted),
@@ -23,7 +22,7 @@ def create_application(
     ):
     
     application = schemas.ApplicationBase(
-        id=id,
+        id=0, # probably not the best way to handle this.....
         scholarship_id=scholarship_id,
         user_id=user_id,
         status=status,
