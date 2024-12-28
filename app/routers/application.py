@@ -36,6 +36,10 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(oauth2_sche
 
 TokenDep = Annotated[Dict, Depends(verify_token)]
 
+@router.get("/health")
+def health_check():
+    return {"status": "ok"}
+
 # applications variable cant be a schemas because of the argument document_file...
 @router.post("/", response_model=schemas.ApplicationBase)
 def create_application(
