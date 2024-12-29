@@ -1,15 +1,18 @@
 from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional, List
-from datetime import datetime, date
+from datetime import datetime
 from sqlalchemy.sql import func
-import enum
+from enum import Enum
 
-class ApplicationStatus(str, enum.Enum):
+class ApplicationStatus(str, Enum):
     submitted = "Submitted"
     under_evaluation = "Under Evaluation"
     approved = "Approved"
     rejected = "Rejected"
-    graded = "Graded"
+
+class UserResponse(str, Enum):
+    accept = "Accepted"
+    reject = "Declined"
 
 class Application(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
@@ -18,6 +21,8 @@ class Application(SQLModel, table=True):
     name: str = Field(nullable=False)
     created_at: datetime = Field(default=func.now(), nullable=False)
     status: ApplicationStatus = Field(nullable=False, default=ApplicationStatus.submitted)
+    user_response: Optional[UserResponse] = Field(default=None)
+    grade: Optional[float] = Field(default=None)
     
     documents: List["DocumentTemplate"] = Relationship(back_populates="application")
 
