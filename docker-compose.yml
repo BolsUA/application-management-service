@@ -13,6 +13,10 @@ services:
       - DATABASE_URL=postgresql://postgres2:password2@db2:5432/applications_db
       - DB_HOST=db2
       - DB_PORT=5432
+      - REGION=us-east-1
+      - USER_POOL_ID=us-east-1_BmAkOcBj4
+      - CLIENT_ID=3totijkr8jsha7a3vbpahlh3mk
+      - FRONTEND_URL=http://localhost:3000
 
   db2:
     image: postgres:13

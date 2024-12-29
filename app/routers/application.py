@@ -26,7 +26,6 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(oauth2_sche
             token,
             signing_key.key,
             algorithms=["RS256"],
-            audience=settings.CLIENT_ID,
         )
         return payload
     except jwt.ExpiredSignatureError:
@@ -43,7 +42,7 @@ def health_check():
 # applications variable cant be a schemas because of the argument document_file...
 @router.post("/", response_model=schemas.ApplicationBase)
 def create_application(
-        token: TokenDep,
+        _: TokenDep,
         scholarship_id: int = Form(...),
         user_id: str = Form(...),
         status: schemas.ApplicationStatus = Form(schemas.ApplicationStatus.submitted),
@@ -72,14 +71,17 @@ def create_application(
     return db_application
 
 @router.get("/", response_model=list[schemas.ApplicationBase])
-def get_applications(token: TokenDep, user_id: str, db: Session = Depends(get_db), skip: int = 0, limit: int = 100):
+def get_applications(_: TokenDep, user_id: str, db: Session = Depends(get_db), skip: int = 0, limit: int = 100):
     return crud_application.get_applications(db, user_id, skip, limit)
 
 @router.get("/{application_id}/details", response_model=schemas.ApplicationBase)
-def get_application(token: TokenDep, application_id: int, db: Session = Depends(get_db)):
+def get_application(_: TokenDep, application_id: int, db: Session = Depends(get_db)):
     return crud_application.get_application(db, application_id)
 
 @router.put("/{application_id}/status", response_model=schemas.ApplicationBase)
-def update_application_status(token: TokenDep, application_id: int, status: schemas.ApplicationStatus, db: Session = Depends(get_db)):
+def update_application_status(_: TokenDep, application_id: int, status: schemas.ApplicationStatus, db: Session = Depends(get_db)):
     return crud_application.update_application_status(db, application_id, status)
 
+@router.put("/{application_id}/response", response_model=schemas.ApplicationBase)
+def update_application_response(_: TokenDep, application_id: int, user_response: schemas.UserResponse, db: Session = Depends(get_db)):
+    return crud_application.update_application_response(db, application_id, user_response)

@@ -29,6 +29,13 @@ def update_application_status(db: Session, application_id: int, status: schemas.
     db.refresh(db_application)
     return db_application
 
+def update_application_response(db: Session, application_id: int, user_response: schemas.UserResponse):
+    db_application = db.query(models.Application).filter(models.Application.id == application_id).first()
+    db_application.user_response = user_response 
+    db.commit()
+    db.refresh(db_application)
+    return db_application
+
 def create_document(db: Session, application_id: int, document_name: str, file_location: str):
     # Create the document template record
     new_document = models.DocumentTemplate(
