@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8002:8000"
+      - "8002:8002"
     depends_on:
       - db2
     environment:
@@ -14,8 +14,8 @@ services:
       - DB_HOST=db2
       - DB_PORT=5432
       - REGION=us-east-1
-      - USER_POOL_ID=us-east-1_BmAkOcBj4
-      - CLIENT_ID=3totijkr8jsha7a3vbpahlh3mk
+      - USER_POOL_ID=
+      - CLIENT_ID=
       - FRONTEND_URL=http://localhost:3000
 
   db2:

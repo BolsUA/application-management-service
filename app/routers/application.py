@@ -7,7 +7,14 @@ from app.schemas import schemas
 from app.crud import crud_application
 from app.core.config import settings
 import jwt
+import os
 from jwt import PyJWKClient
+
+REGION = str(os.getenv("REGION"))
+USER_POOL_ID = str(os.getenv("USER_POOL_ID"))
+COGNITO_KEYS_URL = (
+    f"https://cognito-idp.{REGION}.amazonaws.com/{USER_POOL_ID}/.well-known/jwks.json"
+)
 
 router = APIRouter()
 
@@ -15,22 +22,20 @@ oauth2_scheme = HTTPBearer()
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):
     token = credentials.credentials
-    
+
     try:
         # Fetch public keys from AWS Cognito
-        jwks_client = PyJWKClient(settings.COGNITO_KEYS_URL)
+        jwks_client = PyJWKClient(COGNITO_KEYS_URL)
         signing_key = jwks_client.get_signing_key_from_jwt(token)
-        
+
         # Decode and validate the token
-        payload = jwt.decode(
-            token,
-            signing_key.key,
-            algorithms=["RS256"],
-        )
+        payload = jwt.decode(token, signing_key.key, algorithms=["RS256"])
         return payload
-    except jwt.ExpiredSignatureError:
+    except jwt.ExpiredSignatureError as e:
+        print(e)
         raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.PyJWKError:
+    except Exception as e:
+        print(e)
         raise HTTPException(status_code=401, detail="Invalid token")
 
 TokenDep = Annotated[Dict, Depends(verify_token)]
