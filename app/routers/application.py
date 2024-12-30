@@ -7,14 +7,7 @@ from app.schemas import schemas
 from app.crud import crud_application
 from app.core.config import settings
 import jwt
-import os
 from jwt import PyJWKClient
-
-REGION = str(os.getenv("REGION"))
-USER_POOL_ID = str(os.getenv("USER_POOL_ID"))
-COGNITO_KEYS_URL = (
-    f"https://cognito-idp.{REGION}.amazonaws.com/{USER_POOL_ID}/.well-known/jwks.json"
-)
 
 router = APIRouter()
 
@@ -25,7 +18,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(oauth2_sche
 
     try:
         # Fetch public keys from AWS Cognito
-        jwks_client = PyJWKClient(COGNITO_KEYS_URL)
+        jwks_client = PyJWKClient(settings.COGNITO_KEYS_URL)
         signing_key = jwks_client.get_signing_key_from_jwt(token)
 
         # Decode and validate the token
@@ -48,12 +41,12 @@ def health_check():
 @router.post("/", response_model=schemas.ApplicationBase)
 def create_application(
         _: TokenDep,
+        db: Session = Depends(get_db),
         scholarship_id: int = Form(...),
         user_id: str = Form(...),
         status: schemas.ApplicationStatus = Form(schemas.ApplicationStatus.submitted),
         name: str = Form(...),
         document_file: List[UploadFile] = File(None),
-        db: Session = Depends(get_db),
     ):
     
     application = schemas.ApplicationBase(

@@ -9,7 +9,6 @@ class Settings:
     SECRET_KEY = str(os.getenv('SECRET_KEY', 'K%!MaoL26XQe8iGAAyDrmbkw&bqE$hCPw4hSk!Hf'))
     REGION = str(os.getenv('REGION'))
     USER_POOL_ID = str(os.getenv('USER_POOL_ID'))
-    CLIENT_ID = str(os.getenv('CLIENT_ID'))
     FRONTEND_URL = str(os.getenv('FRONTEND_URL'))
 
     # AWS Cognito configuration
