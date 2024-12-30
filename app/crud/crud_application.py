@@ -5,6 +5,7 @@ from app.schemas import schemas
 from app.models import models
 from fastapi import HTTPException, UploadFile
 
+
 def create_application(db: Session, application: schemas.ApplicationBase):
     db_application = models.Application(
         user_id=application.user_id,
@@ -97,3 +98,15 @@ def save_file(file: UploadFile, directory: str) -> str:
     # with open(file_path, "wb") as f:
     #     f.write(file.file.read())
     return file_path
+
+def get_applications_by_scholarship(db: Session, scholarship_id: int):
+    try:
+        applications = db.query(models.Application).filter(
+            models.Application.scholarship_id == scholarship_id
+        ).all()
+        if not applications:
+            print(f"No applications found for scholarship_id {scholarship_id}")
+        return applications
+    except Exception as e:
+        print(e)
+        raise

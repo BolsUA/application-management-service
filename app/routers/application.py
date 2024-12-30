@@ -15,7 +15,6 @@ oauth2_scheme = HTTPBearer()
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):
     token = credentials.credentials
-
     try:
         # Fetch public keys from AWS Cognito
         jwks_client = PyJWKClient(settings.COGNITO_KEYS_URL)
@@ -83,3 +82,7 @@ def update_application_status(_: TokenDep, application_id: int, status: schemas.
 @router.put("/{application_id}/response", response_model=schemas.ApplicationBase)
 def update_application_response(_: TokenDep, application_id: int, user_response: schemas.UserResponse, db: Session = Depends(get_db)):
     return crud_application.update_application_response(db, application_id, user_response)
+
+@router.get("/scholarship/{scholarship_id}", response_model=List[schemas.ApplicationBase])
+def get_applications_by_scholarship(_: TokenDep, scholarship_id: int, db: Session = Depends(get_db)):
+    return crud_application.get_applications_by_scholarship(db, scholarship_id)
