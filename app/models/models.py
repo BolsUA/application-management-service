@@ -22,7 +22,8 @@ class Application(SQLModel, table=True):
     created_at: datetime = Field(default=func.now(), nullable=False)
     status: ApplicationStatus = Field(nullable=False, default=ApplicationStatus.submitted)
     user_response: Optional[UserResponse] = Field(default=None)
-    grade: Optional[float] = Field(default=None)
+    grade: Optional[float] = Field(default=None, nullable=True)
+    reason: Optional[str] = Field(default=None, nullable=True)
     
     documents: List["DocumentTemplate"] = Relationship(back_populates="application")
 

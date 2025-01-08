@@ -23,9 +23,11 @@ def get_applications(db: Session, user_id: str, skip: int = 0, limit: int = 100)
 def get_application(db: Session, application_id: int):
     return db.query(models.Application).filter(models.Application.id == application_id).first()
 
-def update_application_status(db: Session, application_id: int, status: schemas.ApplicationStatus):
+def update_application_status(db: Session, application_id: int, status: schemas.ApplicationStatus, grade: float, reason: str):
     db_application = db.query(models.Application).filter(models.Application.id == application_id).first()
     db_application.status = status
+    db_application.grade = grade
+    db_application.reason = reason
     db.commit()
     db.refresh(db_application)
     return db_application

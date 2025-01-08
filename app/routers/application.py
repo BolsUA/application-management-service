@@ -20,6 +20,7 @@ oauth2_scheme = HTTPBearer()
 
 DEADLINE_QUEUE_URL = str(os.getenv("DEADLINE_QUEUE_URL"))
 TO_GRADING_QUEUE_URL = str(os.getenv("TO_GRADING_QUEUE_URL"))
+APP_GRADING_QUEUE_URL = str(os.getenv("APP_GRADING_QUEUE_URL"))
 AWS_ACESS_KEY_ID = str(os.getenv("AWS_ACCESS_KEY_ID"))
 AWS_SECRET_ACCESS_KEY = str(os.getenv("AWS_SECRET_ACCESS_KEY"))
 REGION = str(os.getenv("REGION"))
@@ -84,9 +85,9 @@ def get_applications(_: TokenDep, user_id: str, db: Session = Depends(get_db), s
 def get_application(_: TokenDep, application_id: int, db: Session = Depends(get_db)):
     return crud_application.get_application(db, application_id)
 
-@router.put("/{application_id}/status", response_model=schemas.ApplicationBase)
-def update_application_status(_: TokenDep, application_id: int, status: schemas.ApplicationStatus, db: Session = Depends(get_db)):
-    return crud_application.update_application_status(db, application_id, status)
+#@router.put("/{application_id}/status", response_model=schemas.ApplicationBase)
+def update_application_status(application_id: int, status: schemas.ApplicationStatus, grade: float, reason: str, db: Session = Depends(get_db)):
+    return crud_application.update_application_status(db, application_id, status, grade, reason)
 
 @router.put("/{application_id}/response", response_model=schemas.ApplicationBase)
 def update_application_response(_: TokenDep, application_id: int, user_response: schemas.UserResponse, db: Session = Depends(get_db)):
@@ -126,6 +127,17 @@ def process_message(message):
     }
     logging.info(f"Sending message to grading: {message}")
     send_to_sqs(message)
+
+def process_message2(message):
+    # Add your message processing logic here
+    notification = json.loads(message['Body'])
+    for application in notification["applications"]:
+        application_id = application['id']
+        status = application['status']
+        grade = application['grade']
+        reason = application['reason']
+        db_application = update_application_status(application_id, status, grade, reason)
+        logging.info(f"Updated application {application_id} status to {status} with grade {grade}, reason: {reason}") 
     
 def send_to_sqs(message: dict):
     response = sqs.send_message(
@@ -145,7 +157,10 @@ def receive_message(queue_url):
     for message in messages:
         body = json.loads(message['Body'])
         logging.info(f"Received message: {body}")
-        process_message(message)
+        if queue_url == DEADLINE_QUEUE_URL:
+            process_message(message)
+        if queue_url == APP_GRADING_QUEUE_URL:
+            process_message2(message)
         # Delete the message from the queue
         sqs.delete_message(
             QueueUrl=queue_url,
@@ -154,5 +169,6 @@ def receive_message(queue_url):
 
 scheduler = BackgroundScheduler()
 scheduler.add_job(receive_message, 'interval', seconds=2, max_instances=10, args=[DEADLINE_QUEUE_URL])
+scheduler.add_job(receive_message, 'interval', seconds=2, max_instances=10, args=[APP_GRADING_QUEUE_URL])
 logging.getLogger('apscheduler.executors.default').setLevel(logging.WARNING)
 scheduler.start()
