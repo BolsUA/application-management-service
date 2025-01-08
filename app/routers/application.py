@@ -2,16 +2,26 @@ from typing import List, Dict, Annotated
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
+from apscheduler.schedulers.background import BackgroundScheduler
 from app.db.session import get_db
 from app.schemas import schemas
 from app.crud import crud_application
 from app.core.config import settings
 import jwt
 from jwt import PyJWKClient
+import os
+import boto3
+import json
+import logging
 
 router = APIRouter()
 
 oauth2_scheme = HTTPBearer()
+
+QUEUE_URL = str(os.getenv("QUEUE_URL"))
+AWS_ACESS_KEY_ID = str(os.getenv("AWS_ACCESS_KEY_ID"))
+AWS_SECRET_ACCESS_KEY = str(os.getenv("AWS_SECRET_ACCESS_KEY"))
+REGION = str(os.getenv("REGION"))
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):
     token = credentials.credentials
@@ -84,3 +94,38 @@ def update_application_response(_: TokenDep, application_id: int, user_response:
 @router.get("/scholarship/{scholarship_id}", response_model=List[schemas.ApplicationBase])
 def get_applications_by_scholarship(_: TokenDep, scholarship_id: int, db: Session = Depends(get_db)):
     return crud_application.get_applications_by_scholarship(db, scholarship_id)
+
+### SQS HANDLING ###
+
+sqs = boto3.client(
+    'sqs',
+    aws_access_key_id=AWS_ACESS_KEY_ID,
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+    region_name=REGION
+)
+def process_message(message):
+    # Add your message processing logic here    
+    notification = json.loads(message['Body'])
+    
+
+def receive_message(queue_url):
+    response = sqs.receive_message(
+        QueueUrl=queue_url,
+        MaxNumberOfMessages=1,
+        WaitTimeSeconds=5,
+    )
+    messages = response.get('Messages', [])
+    for message in messages:
+        body = json.loads(message['Body'])
+        logging.info(f"Received message: {body}")
+        process_message(message)
+        # Delete the message from the queue
+        sqs.delete_message(
+            QueueUrl=queue_url,
+            ReceiptHandle=message['ReceiptHandle']
+        )
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(receive_message, 'interval', seconds=2, max_instances=10, args=[QUEUE_URL])
+logging.getLogger('apscheduler.executors.default').setLevel(logging.WARNING)
+scheduler.start()
