@@ -18,7 +18,8 @@ router = APIRouter()
 
 oauth2_scheme = HTTPBearer()
 
-QUEUE_URL = str(os.getenv("QUEUE_URL"))
+DEADLINE_QUEUE_URL = str(os.getenv("DEADLINE_QUEUE_URL"))
+TO_GRADING_QUEUE_URL = str(os.getenv("TO_GRADING_QUEUE_URL"))
 AWS_ACESS_KEY_ID = str(os.getenv("AWS_ACCESS_KEY_ID"))
 AWS_SECRET_ACCESS_KEY = str(os.getenv("AWS_SECRET_ACCESS_KEY"))
 REGION = str(os.getenv("REGION"))
@@ -106,7 +107,33 @@ sqs = boto3.client(
 def process_message(message):
     # Add your message processing logic here    
     notification = json.loads(message['Body'])
+    applications = crud_application.get_applications_by_scholarship(next(get_db()), notification["scholarship_id"])
+    for application in applications:
+        crud_application.update_application_status(next(get_db()), application.id, schemas.ApplicationStatus.under_evaluation)
+
+    # Remove unwanted applications attributes
+    applications = [application.dict() for application in applications]
+    for application in applications:
+        application.pop("status")
+        application["created_at"] = application["created_at"].isoformat()
+
+    message = {
+        "applications": applications,
+        "scholarship_id": notification["scholarship_id"],
+        "jury_ids": notification["jury_ids"],
+        "spots": notification["spots"],
+        "closed_at": notification["closed_at"]
+    }
+    logging.info(f"Sending message to grading: {message}")
+    send_to_sqs(message)
     
+def send_to_sqs(message: dict):
+    response = sqs.send_message(
+        QueueUrl=TO_GRADING_QUEUE_URL,
+        MessageBody=json.dumps(message),
+    )
+    print(f"Message sent to SQS: {response['MessageId']}")
+    return response
 
 def receive_message(queue_url):
     response = sqs.receive_message(
@@ -126,6 +153,6 @@ def receive_message(queue_url):
         )
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(receive_message, 'interval', seconds=2, max_instances=10, args=[QUEUE_URL])
+scheduler.add_job(receive_message, 'interval', seconds=2, max_instances=10, args=[DEADLINE_QUEUE_URL])
 logging.getLogger('apscheduler.executors.default').setLevel(logging.WARNING)
 scheduler.start()
