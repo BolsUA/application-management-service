@@ -132,11 +132,16 @@ def process_message2(message):
     # Add your message processing logic here
     notification = json.loads(message['Body'])
     for application in notification["applications"]:
-        application_id = application['id']
+        application_id = application['application_id']
         status = application['status']
         grade = application['grade']
         reason = application['reason']
-        db_application = update_application_status(application_id, status, grade, reason)
+        #### THE WINNER MUST HAVE FLAG SELECTED SET TO TRUE 
+        if(status == "Accepted"):
+            status = schemas.ApplicationStatus.approved
+        else:
+            status = schemas.ApplicationStatus.rejected
+        crud_application.update_application_status(next(get_db()), application_id, status, grade, reason)
         logging.info(f"Updated application {application_id} status to {status} with grade {grade}, reason: {reason}") 
     
 def send_to_sqs(message: dict):
