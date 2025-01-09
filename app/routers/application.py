@@ -45,7 +45,7 @@ def health_check():
     return {"status": "ok"}
 
 # applications variable cant be a schemas because of the argument document_file...
-@router.post("/", response_model=schemas.ApplicationBase)
+@router.post("/submit", response_model=schemas.ApplicationBase)
 def create_application(
         _: TokenDep,
         db: Session = Depends(get_db),
