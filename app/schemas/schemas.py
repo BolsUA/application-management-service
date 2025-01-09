@@ -40,3 +40,4 @@ class ApplicationBase(BaseModel):
     documents: Optional[List[DocumentTemplateCreate]] = None
     user_response: Optional[UserResponse] = None
     grade: Optional[float] = None 
+    selected: bool = False

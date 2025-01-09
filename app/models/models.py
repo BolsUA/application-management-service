@@ -24,6 +24,7 @@ class Application(SQLModel, table=True):
     user_response: Optional[UserResponse] = Field(default=None)
     grade: Optional[float] = Field(default=None, nullable=True)
     reason: Optional[str] = Field(default=None, nullable=True)
+    select: bool = Field(default=False)
     
     documents: List["DocumentTemplate"] = Relationship(back_populates="application")
 
