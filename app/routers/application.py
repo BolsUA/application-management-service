@@ -23,6 +23,7 @@ TO_GRADING_QUEUE_URL = str(os.getenv("TO_GRADING_QUEUE_URL"))
 APP_GRADING_QUEUE_URL = str(os.getenv("APP_GRADING_QUEUE_URL"))
 AWS_ACESS_KEY_ID = str(os.getenv("AWS_ACCESS_KEY_ID"))
 AWS_SECRET_ACCESS_KEY = str(os.getenv("AWS_SECRET_ACCESS_KEY"))
+REGION = str(os.getenv("REGION"))
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):
     token = credentials.credentials
@@ -46,7 +47,7 @@ def health_check():
     return {"status": "ok"}
 
 # applications variable cant be a schemas because of the argument document_file...
-@router.post("/", response_model=schemas.ApplicationBase)
+@router.post("/submit", response_model=schemas.ApplicationBase)
 def create_application(
         _: TokenDep,
         db: Session = Depends(get_db),
@@ -96,8 +97,6 @@ def get_applications_by_scholarship(_: TokenDep, scholarship_id: int, db: Sessio
 
 sqs = boto3.client(
     'sqs',
-    aws_access_key_id=AWS_ACESS_KEY_ID,
-    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
     region_name=REGION
 )
 def process_message(message):
@@ -127,11 +126,18 @@ def process_message2(message):
     # Add your message processing logic here
     notification = json.loads(message['Body'])
     for application in notification["applications"]:
-        application_id = application['id']
+        application_id = application['application_id']
         status = application['status']
         grade = application['grade']
         reason = application['reason']
-        db_application = update_application_status(application_id, status, grade, reason)
+        #### THE WINNER MUST HAVE FLAG SELECTED SET TO TRUE 
+        if(status == "Accepted"):
+            status = schemas.ApplicationStatus.approved
+            crud_application.update_application_select(next(get_db()), application_id, True)
+        else:
+            status = schemas.ApplicationStatus.rejected
+            crud_application.update_application_select(next(get_db()), application_id, False)
+        crud_application.update_application_status(next(get_db()), application_id, status, grade, reason)
         logging.info(f"Updated application {application_id} status to {status} with grade {grade}, reason: {reason}") 
     
 def send_to_sqs(message: dict):
