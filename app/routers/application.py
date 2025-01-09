@@ -21,8 +21,6 @@ oauth2_scheme = HTTPBearer()
 DEADLINE_QUEUE_URL = str(os.getenv("DEADLINE_QUEUE_URL"))
 TO_GRADING_QUEUE_URL = str(os.getenv("TO_GRADING_QUEUE_URL"))
 APP_GRADING_QUEUE_URL = str(os.getenv("APP_GRADING_QUEUE_URL"))
-AWS_ACESS_KEY_ID = str(os.getenv("AWS_ACCESS_KEY_ID"))
-AWS_SECRET_ACCESS_KEY = str(os.getenv("AWS_SECRET_ACCESS_KEY"))
 REGION = str(os.getenv("REGION"))
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):
@@ -97,8 +95,6 @@ def get_applications_by_scholarship(_: TokenDep, scholarship_id: int, db: Sessio
 
 sqs = boto3.client(
     'sqs',
-    aws_access_key_id=AWS_ACESS_KEY_ID,
-    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
     region_name=REGION
 )
 def process_message(message):
