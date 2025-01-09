@@ -135,8 +135,10 @@ def process_message2(message):
         #### THE WINNER MUST HAVE FLAG SELECTED SET TO TRUE 
         if(status == "Accepted"):
             status = schemas.ApplicationStatus.approved
+            crud_application.update_application_select(next(get_db()), application_id, True)
         else:
             status = schemas.ApplicationStatus.rejected
+            crud_application.update_application_select(next(get_db()), application_id, False)
         crud_application.update_application_status(next(get_db()), application_id, status, grade, reason)
         logging.info(f"Updated application {application_id} status to {status} with grade {grade}, reason: {reason}") 
     

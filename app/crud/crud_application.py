@@ -108,5 +108,14 @@ def get_applications_by_scholarship(db: Session, scholarship_id: int):
         print(e)
         raise
 
+def update_application_select(db: Session, application_id: int, select: bool):
+    db_application = db.query(models.Application).filter(models.Application.id == application_id).first()
+    if not db_application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    db_application.select = select
+    db.commit()
+    db.refresh(db_application)
+    return db_application
+
 def get_all_applications(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Application).offset(skip).limit(limit).all()
