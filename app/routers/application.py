@@ -107,7 +107,7 @@ def process_message(message):
         crud_application.update_application_status(next(get_db()), application.id, schemas.ApplicationStatus.under_evaluation)
 
     # Remove unwanted applications attributes
-    applications = [application.dict() for application in applications]
+    applications = [application.model_dump() for application in applications]
     for application in applications:
         application.pop("status")
         application["created_at"] = application["created_at"].isoformat()
