@@ -23,11 +23,13 @@ def get_applications(db: Session, user_id: str, skip: int = 0, limit: int = 100)
 def get_application(db: Session, application_id: int):
     return db.query(models.Application).filter(models.Application.id == application_id).first()
 
-def update_application_status(db: Session, application_id: int, status: schemas.ApplicationStatus, grade: float, reason: str):
+def update_application_status(db: Session, application_id: int, status: schemas.ApplicationStatus, grade: float = None, reason: str = None):
     db_application = db.query(models.Application).filter(models.Application.id == application_id).first()
     db_application.status = status
-    db_application.grade = grade
-    db_application.reason = reason
+    if grade is not None:
+        db_application.grade = grade
+    if reason is not None:
+        db_application.reason = reason
     db.commit()
     db.refresh(db_application)
     return db_application
@@ -112,3 +114,6 @@ def get_applications_by_scholarship(db: Session, scholarship_id: int):
     except Exception as e:
         print(e)
         raise
+
+def get_all_applications(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Application).offset(skip).limit(limit).all()
