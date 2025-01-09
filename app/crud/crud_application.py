@@ -54,7 +54,7 @@ def create_document(db: Session, application_id: int, document_name: str, file_l
     db.refresh(new_document)
     return new_document
 
-def create_application_document(db: Session, application_id: int, file: UploadFile) -> models.DocumentTemplate:
+async def create_application_document(db: Session, application_id: int, file: UploadFile) -> models.DocumentTemplate:
     
     document_name = get_filename_without_extension(file)
 
@@ -62,7 +62,7 @@ def create_application_document(db: Session, application_id: int, file: UploadFi
         raise HTTPException(status_code=400, detail="Document name could not be determined")
 
     # Save the document file
-    file_location = save_file(file)
+    file_location = await save_file(file)
     
     if not file_location:
         raise HTTPException(status_code=500, detail="Could not save document file")

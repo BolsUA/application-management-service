@@ -1,9 +1,10 @@
 from typing import List, Dict, Annotated
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.db.session import get_db
+from app.models import models
 from app.schemas import schemas
 from app.crud import crud_application
 from app.core.config import settings
@@ -48,7 +49,7 @@ def health_check():
 
 # applications variable cant be a schemas because of the argument document_file...
 @router.post("/submit", response_model=schemas.ApplicationBase)
-def create_application(
+async def create_application(
         _: TokenDep,
         db: Session = Depends(get_db),
         scholarship_id: int = Form(...),
@@ -73,7 +74,7 @@ def create_application(
 
     # Create the document records
     for document in  enumerate(document_file or []):
-        crud_application.create_application_document(db, db_application.id, document[1])
+        await crud_application.create_application_document(db, db_application.id, document[1])
 
     return db_application
 
@@ -100,20 +101,49 @@ sqs = boto3.client(
     region_name=REGION
 )
 def process_message(message):
-    # Add your message processing logic here    
     notification = json.loads(message['Body'])
-    applications = crud_application.get_applications_by_scholarship(next(get_db()), notification["scholarship_id"])
+    # Use joinedload to eagerly load the documents relationship
+    db = next(get_db())
+    applications = (
+        db.query(models.Application)
+        .options(joinedload(models.Application.documents))
+        .filter(models.Application.scholarship_id == notification["scholarship_id"])
+        .all()
+    )
+    
     for application in applications:
-        crud_application.update_application_status(next(get_db()), application.id, schemas.ApplicationStatus.under_evaluation)
+        crud_application.update_application_status(
+            db, 
+            application.id, 
+            schemas.ApplicationStatus.under_evaluation
+        )
 
-    # Remove unwanted applications attributes
-    applications = [application.model_dump() for application in applications]
+    logging.info(f"Applications under evaluation: {applications}")
+
+    # Convert applications to dict with documents included
+    applications_data = []
     for application in applications:
-        application.pop("status")
-        application["created_at"] = application["created_at"].isoformat()
+        app_dict = application.model_dump()
+        # Convert documents to dict format
+        documents_data = []
+        for doc in application.documents:
+            doc_dict = {
+                "id": doc.id,
+                "name": doc.name,
+                "file_path": doc.file_path
+            }
+            documents_data.append(doc_dict)
+        
+        # Remove unwanted attributes and add documents
+        app_dict.pop("status")
+        app_dict["created_at"] = app_dict["created_at"].isoformat()
+        app_dict["documents"] = documents_data
+        applications_data.append(app_dict)
+
+    logging.info(f"Applications to be graded: {applications_data}")
 
     message = {
-        "applications": applications,
+        "applications": applications_data,
         "scholarship_id": notification["scholarship_id"],
         "jury_ids": notification["jury_ids"],
         "spots": notification["spots"],
