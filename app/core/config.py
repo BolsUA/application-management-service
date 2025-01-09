@@ -10,6 +10,7 @@ class Settings:
     REGION = str(os.getenv('REGION'))
     USER_POOL_ID = str(os.getenv('USER_POOL_ID'))
     FRONTEND_URL = str(os.getenv('FRONTEND_URL'))
+    S3_BUCKET_NAME = str(os.getenv("S3_BUCKET_NAME", "bolsua-storage-dev"))
 
     # AWS Cognito configuration
     COGNITO_KEYS_URL = f'https://cognito-idp.{REGION}.amazonaws.com/{USER_POOL_ID}/.well-known/jwks.json'

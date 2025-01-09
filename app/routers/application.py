@@ -23,7 +23,6 @@ TO_GRADING_QUEUE_URL = str(os.getenv("TO_GRADING_QUEUE_URL"))
 APP_GRADING_QUEUE_URL = str(os.getenv("APP_GRADING_QUEUE_URL"))
 AWS_ACESS_KEY_ID = str(os.getenv("AWS_ACCESS_KEY_ID"))
 AWS_SECRET_ACCESS_KEY = str(os.getenv("AWS_SECRET_ACCESS_KEY"))
-REGION = str(os.getenv("REGION"))
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):
     token = credentials.credentials
