@@ -6,13 +6,20 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8001:8000"
+      - "8002:8002"
     depends_on:
       - db2
     environment:
       - DATABASE_URL=postgresql://postgres2:password2@db2:5432/applications_db
       - DB_HOST=db2
       - DB_PORT=5432
+      - REGION=us-east-1
+      - USER_POOL_ID=
+      - CLIENT_ID=
+      - FRONTEND_URL=http://localhost:3000
+      - QUEUE_URL=
+      - AWS_ACCESS_KEY_ID=
+      - AWS_SECRET_ACCESS_KEY=  
 
   db2:
     image: postgres:13
@@ -21,4 +28,4 @@ services:
       POSTGRES_PASSWORD: password2
       POSTGRES_DB: applications_db
     ports:
-      - "5433:5432"
+      - "5434:5432"

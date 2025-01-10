@@ -1,11 +1,18 @@
+import json
+import boto3
 import os
-from fastapi import FastAPI
+import logging
+from fastapi import FastAPI, BackgroundTasks
+from starlette.middleware.sessions import SessionMiddleware 
 from app.routers import application
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from sqlmodel import Session, SQLModel, select
+from sqlmodel import SQLModel 
 from app.db.session import engine
+from app.core.config import settings
+from apscheduler.schedulers.background import BackgroundScheduler
+logging.basicConfig(level=logging.INFO)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -15,7 +22,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(swagger_ui_parameters={"syntaxHighlight": True}, lifespan=lifespan)
 
-origins = ["*"]
+origins = [
+    "*",
+]
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,6 +33,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
 
 app.include_router(application.router, prefix="/applications", tags=["applications"])
 

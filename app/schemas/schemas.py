@@ -18,13 +18,17 @@ class DocumentTemplate(DocumentTemplateBase):
     class Config:
         from_attributes = True
 
+class UserResponse(str, Enum):
+    accept = "Accepted"
+    reject = "Declined"
+
 class ApplicationStatus(str, Enum):
     #draft = "Draft"
     submitted = "Submitted"
     under_evaluation = "Under Evaluation"
-    approved = "Approved"
-    rejected = "Rejected"
-    graded = "Graded"
+    approved = "Approved" # if approved means that is graded and selected for the position
+    rejected = "Rejected" # if reject means that is graded but wasn't chosen for the position
+    # graded = "Graded"
 
 class ApplicationBase(BaseModel):
     id: int
@@ -34,3 +38,6 @@ class ApplicationBase(BaseModel):
     created_at: Optional[datetime] = None
     name: str
     documents: Optional[List[DocumentTemplateCreate]] = None
+    user_response: Optional[UserResponse] = None
+    grade: Optional[float] = None 
+    select: bool = False
